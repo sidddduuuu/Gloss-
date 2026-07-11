@@ -363,6 +363,16 @@
   flex: 1 1 auto;
   border-bottom: 1px solid var(--line);
 }
+.ai-header,
+.graph-header {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray);
+}
 .ai-tabs,
 .graph-tabs {
   display: flex;

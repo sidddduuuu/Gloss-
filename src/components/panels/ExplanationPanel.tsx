@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { ExplainResponse } from "@/lib/contract";
 
 interface Props {
@@ -18,118 +17,74 @@ export default function ExplanationPanel({
   onGotIt,
   onViewInGraph,
 }: Props) {
-  const [tab, setTab] = useState<"explain" | "notes">("explain");
-  const [vote, setVote] = useState<"up" | "down" | null>(null);
-
   return (
     <section className="ai-panel">
-      <div className="ai-tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === "explain"}
-          className={tab === "explain" ? "active" : ""}
-          onClick={() => setTab("explain")}
-        >
-          Explain
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "notes"}
-          className={tab === "notes" ? "active" : ""}
-          onClick={() => setTab("notes")}
-        >
-          Notes
-        </button>
-      </div>
+      <div className="ai-header">Explain</div>
 
-      {tab === "notes" && (
-        <div className="ai-empty">Your notes for this paper will appear here.</div>
-      )}
+      <div className="ai-body">
+        {loading && (
+          <div className="ai-loading">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+            <p>Reading the passage and your history…</p>
+          </div>
+        )}
 
-      {tab === "explain" && (
-        <div className="ai-body">
-          {loading && (
-            <div className="ai-loading">
-              <span className="dot" />
-              <span className="dot" />
-              <span className="dot" />
-              <p>Reading the passage and your history…</p>
+        {!loading && !data && (
+          <div className="ai-empty">
+            Highlight a passage and tap <strong>Explain</strong> to begin.
+          </div>
+        )}
+
+        {!loading && data && (
+          <>
+            {data.resume_note && <p className="resume-note">↩ {data.resume_note}</p>}
+
+            <div className={`grounded-badge ${data.grounded ? "" : "warn"}`}>
+              {data.grounded ? "✓ Grounded in this paper" : "⚠ Low confidence"}
             </div>
-          )}
 
-          {!loading && !data && (
-            <div className="ai-empty">
-              Highlight a passage and tap <strong>Explain</strong> to begin.
-            </div>
-          )}
-
-          {!loading && data && (
-            <>
-              {data.resume_note && <p className="resume-note">↩ {data.resume_note}</p>}
-
-              <div className={`grounded-badge ${data.grounded ? "" : "warn"}`}>
-                {data.grounded ? "✓ Grounded in this paper" : "⚠ Low confidence"}
-              </div>
-
-              {data.built_on.length > 0 && (
-                <article className="card built-on-card">
-                  <div className="built-on-head">Built on your knowledge</div>
-                  <div className="built-on-row">
-                    <span className="built-on-check">✓</span>
-                    <div>
-                      <div className="built-on-concept">
-                        {data.built_on[0].concept.replace(/_/g, " ")}
-                      </div>
-                      <div className="built-on-meta">
-                        Previously mastered · from {data.built_on[0].from_paper}
-                      </div>
+            {data.built_on.length > 0 && (
+              <article className="card built-on-card">
+                <div className="built-on-head">Built on your knowledge</div>
+                <div className="built-on-row">
+                  <span className="built-on-check">✓</span>
+                  <div>
+                    <div className="built-on-concept">
+                      {data.built_on[0].concept.replace(/_/g, " ")}
+                    </div>
+                    <div className="built-on-meta">
+                      Previously mastered · from {data.built_on[0].from_paper}
                     </div>
                   </div>
-                  <button className="link-btn" onClick={onViewInGraph}>
-                    View in graph →
-                  </button>
-                </article>
-              )}
-
-              <article className="card explanation-card">
-                {data.title && <h3 className="card-title">{data.title}</h3>}
-                <p className="explanation-text">{data.explanation}</p>
+                </div>
+                <button className="link-btn" onClick={onViewInGraph}>
+                  View in graph →
+                </button>
               </article>
+            )}
 
-              {data.analogy && (
-                <article className="card analogy-card">
-                  <div className="analogy-kicker">Analogy</div>
-                  <p>{data.analogy}</p>
-                </article>
-              )}
+            <article className="card explanation-card">
+              {data.title && <h3 className="card-title">{data.title}</h3>}
+              <p className="explanation-text">{data.explanation}</p>
+            </article>
 
-              <div className="feedback-row">
-                <span>Helpful?</span>
-                <button
-                  className={`thumb ${vote === "up" ? "on" : ""}`}
-                  onClick={() => setVote("up")}
-                  aria-label="Helpful"
-                >
-                  👍
-                </button>
-                <button
-                  className={`thumb ${vote === "down" ? "on" : ""}`}
-                  onClick={() => setVote("down")}
-                  aria-label="Not helpful"
-                >
-                  👎
-                </button>
-              </div>
+            {data.analogy && (
+              <article className="card analogy-card">
+                <div className="analogy-kicker">Analogy</div>
+                <p>{data.analogy}</p>
+              </article>
+            )}
 
-              {data.new_concept && (
-                <button className="cta" onClick={onGotIt} disabled={confirmed}>
-                  {confirmed ? "✓ Added to your understanding" : "Add to Understanding"}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      )}
+            {data.new_concept && (
+              <button className="cta" onClick={onGotIt} disabled={confirmed}>
+                {confirmed ? "✓ Added to your understanding" : "Add to Understanding"}
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

@@ -3,14 +3,6 @@
 import { useRef } from "react";
 import type { Paper } from "@/lib/papers";
 
-const NAV = [
-  { icon: "▤", label: "Library", active: true },
-  { icon: "◈", label: "Graph" },
-  { icon: "✎", label: "Notes" },
-  { icon: "◉", label: "Memory" },
-  { icon: "⚙", label: "Settings" },
-];
-
 interface Props {
   papers: Paper[];
   currentId: string;
@@ -41,17 +33,6 @@ export default function Sidebar({
           <div className="logo-tag">Read. Understand. Remember.</div>
         </div>
       </div>
-
-      <nav className="sidebar-nav" aria-label="Primary">
-        {NAV.map((n) => (
-          <button key={n.label} className={`nav-item ${n.active ? "active" : ""}`}>
-            <span className="nav-icon" aria-hidden>
-              {n.icon}
-            </span>
-            {n.label}
-          </button>
-        ))}
-      </nav>
 
       <input
         ref={fileRef}

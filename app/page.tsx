@@ -201,12 +201,6 @@ export default function Home() {
                 <button className="pill-primary" onClick={() => runExplain(chip)}>
                   Explain
                 </button>
-                <button className="pill-ghost" onClick={() => runExplain(chip)}>
-                  Ask
-                </button>
-                <button className="pill-ghost" onClick={() => runExplain(chip)}>
-                  Remember
-                </button>
               </div>
             )}
           </div>

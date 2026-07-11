@@ -2,14 +2,17 @@
   "name": "gloss",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-worker.mjs",
     "build": "next build",
     "start": "next start",
+    "postinstall": "node scripts/copy-worker.mjs",
     "seed": "node scripts/load-seed.mjs"
   },
   "dependencies": {
     "next": "^15.3.0",
-    "pdfjs-dist": "^5.3.0",
+    "pdfjs-dist": "5.7.284",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

@@ -46,49 +46,59 @@ export default function PdfReader({ paper, onSelect, onMeta }: Props) {
         onMeta?.({ numPages: doc.numPages, rendered: maxPages });
         const width = container.clientWidth || 820;
 
+        let renderedAny = false;
         for (let n = 1; n <= maxPages; n++) {
-          const page = await doc.getPage(n);
           if (cancelled) return;
-          const unscaled = page.getViewport({ scale: 1 });
-          const scale = width / unscaled.width;
-          const viewport = page.getViewport({ scale });
+          try {
+            const page = await doc.getPage(n);
+            if (cancelled) return;
+            const unscaled = page.getViewport({ scale: 1 });
+            const scale = width / unscaled.width;
+            const viewport = page.getViewport({ scale });
 
-          const pageEl = document.createElement("div");
-          pageEl.className = "pdf-page";
-          pageEl.style.width = `${viewport.width}px`;
-          pageEl.style.height = `${viewport.height}px`;
-          // Required by pdfjs TextLayer to size/position the selectable text.
-          pageEl.style.setProperty("--scale-factor", String(scale));
-          pageEl.style.setProperty("--total-scale-factor", String(scale));
+            const pageEl = document.createElement("div");
+            pageEl.className = "pdf-page";
+            pageEl.style.width = `${viewport.width}px`;
+            pageEl.style.height = `${viewport.height}px`;
+            // Required by pdfjs TextLayer to size/position the selectable text.
+            pageEl.style.setProperty("--scale-factor", String(scale));
+            pageEl.style.setProperty("--total-scale-factor", String(scale));
 
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext("2d")!;
-          pageEl.appendChild(canvas);
+            const canvas = document.createElement("canvas");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext("2d")!;
+            pageEl.appendChild(canvas);
 
-          const textDiv = document.createElement("div");
-          textDiv.className = "pdf-text-layer";
-          textDiv.style.width = `${viewport.width}px`;
-          textDiv.style.height = `${viewport.height}px`;
-          pageEl.appendChild(textDiv);
-          container.appendChild(pageEl);
+            const textDiv = document.createElement("div");
+            textDiv.className = "pdf-text-layer";
+            textDiv.style.width = `${viewport.width}px`;
+            textDiv.style.height = `${viewport.height}px`;
+            pageEl.appendChild(textDiv);
+            container.appendChild(pageEl);
 
-          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+            await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-          const textContent = await page.getTextContent();
-          texts.set(
-            n,
-            textContent.items.map((i) => ("str" in i ? i.str : "")).join(" ")
-          );
-          const textLayer = new TextLayer({ textContentSource: textContent, container: textDiv, viewport });
-          await textLayer.render();
+            const textContent = await page.getTextContent();
+            texts.set(
+              n,
+              textContent.items.map((i) => ("str" in i ? i.str : "")).join(" ")
+            );
+            const textLayer = new TextLayer({ textContentSource: textContent, container: textDiv, viewport });
+            await textLayer.render();
+            renderedAny = true;
+            // Show the reader as soon as the first page is up; keep rendering the rest.
+            if (n === 1) setStatus("ready");
+          } catch (pageErr) {
+            // One bad page must not blank the whole document.
+            console.error(`[PdfReader] page ${n} failed`, pageErr);
+          }
         }
         if (cancelled) return;
         setPageText(texts);
-        setStatus("ready");
+        setStatus(renderedAny ? "ready" : "error");
       } catch (err) {
-        console.error("[PdfReader]", err);
+        console.error("[PdfReader] document load failed", err);
         if (!cancelled) setStatus("error");
       }
     })();

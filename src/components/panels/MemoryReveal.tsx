@@ -2,14 +2,24 @@
 
 import { useEffect, useState } from "react";
 
-interface LearnerRecord {
+interface EverosEpisode {
+  id?: string;
+  summary?: string;
+  episode?: string;
+  timestamp?: number | string;
+}
+
+interface MemoryData {
   learner_id: string;
-  style: { length: string; approach: string; struggles: string[] };
   concepts: Record<
     string,
     { status: string; understanding: string; from_paper: string; last_seen: string }
   >;
-  sessions: { date: string; summary: string }[];
+  everos?: {
+    enabled: boolean;
+    episodes: EverosEpisode[];
+    profiles: { profile_data?: unknown; explicit_info?: unknown }[];
+  };
 }
 
 interface Props {
@@ -20,17 +30,22 @@ interface Props {
 }
 
 export default function MemoryReveal({ open, refreshKey, lastExcerpt, onClose }: Props) {
-  const [record, setRecord] = useState<LearnerRecord | null>(null);
+  const [record, setRecord] = useState<MemoryData | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setLoading(true);
     fetch("/api/memory")
       .then((r) => r.json())
       .then(setRecord)
-      .catch(() => setRecord(null));
+      .catch(() => setRecord(null))
+      .finally(() => setLoading(false));
   }, [open, refreshKey]);
 
   if (!open) return null;
+
+  const everos = record?.everos;
 
   return (
     <div className="reveal-backdrop" onClick={onClose}>
@@ -42,6 +57,14 @@ export default function MemoryReveal({ open, refreshKey, lastExcerpt, onClose }:
           </button>
         </div>
 
+        {everos && (
+          <div className={`everos-status-line ${everos.enabled ? "on" : "off"}`}>
+            <span className="status-dot online" /> EverOS Cloud —{" "}
+            {everos.enabled ? "connected" : "not configured"}
+            {everos.enabled && ` · ${everos.episodes.length} episodes · ${everos.profiles.length} profile`}
+          </div>
+        )}
+
         {lastExcerpt && (
           <>
             <h4>Recalled for the last explanation</h4>
@@ -49,9 +72,27 @@ export default function MemoryReveal({ open, refreshKey, lastExcerpt, onClose }:
           </>
         )}
 
+        {everos?.enabled && everos.episodes.length > 0 && (
+          <>
+            <h4>Episodic memories in EverOS</h4>
+            <ul className="everos-episodes">
+              {everos.episodes.map((e, i) => (
+                <li key={e.id ?? i}>{e.summary ?? e.episode}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {everos?.enabled && everos.profiles.length > 0 && (
+          <>
+            <h4>Learner profile (extracted by EverOS)</h4>
+            <pre className="reveal-json">{JSON.stringify(everos.profiles[0], null, 2)}</pre>
+          </>
+        )}
+
         {record && (
           <>
-            <h4>Full learner memory</h4>
+            <h4>Confirmed concepts (session state)</h4>
             <div className="concept-grid">
               {Object.entries(record.concepts).map(([id, c]) => (
                 <div key={id} className={`concept-chip ${c.status}`}>
@@ -60,9 +101,10 @@ export default function MemoryReveal({ open, refreshKey, lastExcerpt, onClose }:
                 </div>
               ))}
             </div>
-            <pre className="reveal-json">{JSON.stringify(record, null, 2)}</pre>
           </>
         )}
+
+        {loading && <p className="muted">Loading memory…</p>}
       </div>
     </div>
   );

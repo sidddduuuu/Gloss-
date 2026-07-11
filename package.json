@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "node scripts/copy-worker.mjs",
-    "seed": "node scripts/load-seed.mjs"
+    "seed": "node scripts/load-seed.mjs",
+    "seed:everos": "node scripts/load-everos-seed.mjs"
   },
   "dependencies": {
     "next": "^15.3.0",

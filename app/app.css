@@ -824,6 +824,32 @@
 .concept-chip.shaky { border-color: var(--question); }
 .concept-chip.attempted { border-color: var(--remember); }
 
+.everos-status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink);
+  background: var(--primary-soft);
+  border: 1px solid rgba(108, 99, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.everos-status-line.off { background: var(--bg); color: var(--gray); }
+.everos-episodes {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.everos-episodes li {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
 /* ============ responsive ============ */
 @media (max-width: 1200px) {
   .shell-main { grid-template-columns: 240px 1fr 380px; }

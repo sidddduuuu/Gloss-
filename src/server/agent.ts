@@ -6,8 +6,9 @@ import type { ExplainRequest, ExplainResponse } from "@/lib/contract";
 import { buildMockExplain } from "@/server/mockExplain";
 import { readLearner, type LearnerRecord } from "@/server/memoryStore";
 import { callGateway, gatewayConfigured } from "@/server/gateway";
+import { searchMemory, type Episode } from "@/server/everos";
 
-function buildSystemPrompt(learner: LearnerRecord): string {
+function buildSystemPrompt(learner: LearnerRecord, everosMemory: string): string {
   const confirmed = Object.entries(learner.concepts)
     .filter(([, c]) => c.status === "confirmed")
     .map(([id, c]) => `- ${id} (from "${c.from_paper}"): ${c.understanding}`)
@@ -23,6 +24,9 @@ function buildSystemPrompt(learner: LearnerRecord): string {
     "",
     `LEARNER STYLE: ${learner.style.length}, ${learner.style.approach}. Struggles: ${learner.style.struggles.join(", ")}.`,
     "",
+    everosMemory
+      ? `RETRIEVED FROM EVEROS MEMORY (the learner's real reading history — build on what's relevant, and say so):\n${everosMemory}`
+      : "",
     confirmed
       ? `CONFIRMED CONCEPTS (build on these when relevant, and say so):\n${confirmed}`
       : "No confirmed concepts yet — explain cold, in the learner's style.",
@@ -32,7 +36,24 @@ function buildSystemPrompt(learner: LearnerRecord): string {
     "everyday analogy), grounded (boolean), built_on (array of {concept, from_paper} —",
     "only concepts from the confirmed list above that you actually built on),",
     'resume_note (string or null), new_concept ({concept, understanding, status:"pending"} or null).',
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+// Retrieve the learner's relevant history from EverOS and format it for the prompt.
+async function retrieveEverosMemory(selection: string): Promise<string> {
+  const { episodes, profiles } = await searchMemory(selection, 5);
+  const lines: string[] = [];
+  for (const e of episodes as Episode[]) {
+    const text = e.summary ?? e.episode;
+    if (text) lines.push(`- ${text}`);
+  }
+  if (profiles.length > 0) {
+    const p = profiles[0].profile_data;
+    if (p) lines.push(`- Profile traits: ${JSON.stringify(p).slice(0, 400)}`);
+  }
+  return lines.slice(0, 6).join("\n");
 }
 
 function buildUserPrompt(req: ExplainRequest): string {
@@ -57,8 +78,9 @@ export async function explain(req: ExplainRequest): Promise<ExplainResponse> {
   const mock = buildMockExplain(req, learner);
   if (!gatewayConfigured() || isScriptedConcept(req.selection)) return mock;
 
+  const everosMemory = await retrieveEverosMemory(req.selection);
   const raw = await callGateway([
-    { role: "system", content: buildSystemPrompt(learner) },
+    { role: "system", content: buildSystemPrompt(learner, everosMemory) },
     { role: "user", content: buildUserPrompt(req) },
   ]);
   if (!raw) return mock;

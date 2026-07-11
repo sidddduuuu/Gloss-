@@ -17,8 +17,8 @@
 - **Learner:** one person — **Sam** (§4). Open the demo by naming him.
 - **Spine:** built as a **Raven** agent on **EverOS** memory. (Raven-built teams are in contention to be featured on Raven/EverOS GitHub — we lead with it.)
 - **Backend + submission:** **Butterbase** (MCP submission is mandatory for judging).
-- **Hosting:** **Nebius** (frontend/backend/model endpoint via builder credits).
-- **Model:** Claude API for grounded explanations + figure reading.
+- **Hosting:** **Butterbase** for everything server-side; frontend runs locally for the demo. **No Nebius** (no credits received).
+- **Model:** **Butterbase AI gateway** (single chat endpoint, covered by credits) for grounded explanations. Confirm vision support for figure reading — if text-only, don't feature figures (cut list #2).
 - **Reader:** already built — do not rebuild it.
 - **Deck:** required — submit to the Beta deck link before showcase.
 
@@ -138,7 +138,7 @@ Real build window: ~1:00–5:00 + scraps before lunch.
 
 **4:00–4:40 (Hour 4)**
 - Curveball path end-to-end
-- **Butterbase MCP submission + Nebius deploy done now** (not at 4:55)
+- **Butterbase MCP submission + deploy done now** (not at 4:55)
 
 **4:40–5:00 — freeze & rehearse**
 - No new features. Run the 2-min demo twice. Record a backup.
@@ -171,12 +171,12 @@ Real build window: ~1:00–5:00 + scraps before lunch.
 | **Best Self-Evolving Memory** | Live curveball → Raven downgrades concept → simpler re-explain | B / A |
 | **Best Memory Reveal** | Reveal panel: raw EverOS record + growing graph | A / B |
 | **Featured use case** | Built visibly *on Raven*; credit it in open + close | both |
-| **Best Use of Butterbase** | MCP submission + run-state stored in Butterbase | B |
+| **Best Use of Butterbase** | MCP submission + run-state + all model calls via the Butterbase AI gateway | B |
 
 ---
 
 ## 10. Cut list (protect the demo)
-**Must work:** seed loaded · Raven `/explain` with `built_on` + `graph_ops` · one cross-paper edge · Got it → EverOS write · Memory Reveal · Butterbase submission · Nebius deploy.
+**Must work:** seed loaded · Raven `/explain` with `built_on` + `graph_ops` · one cross-paper edge · Got it → EverOS write · Memory Reveal · Butterbase submission · demo runs end-to-end (local frontend + Butterbase backend).
 
 **Cut first if behind, in order:**
 1. Curveball (Self-Evolving) — keep Cross-Session + Reveal
@@ -197,10 +197,10 @@ Real build window: ~1:00–5:00 + scraps before lunch.
 - [ ] Memory Reveal shows a real recalled record
 - [ ] Curveball works (or cut cleanly)
 - [ ] **Butterbase MCP submission complete**
-- [ ] Deployed on **Nebius**; only claim services actually used
+- [ ] Demo runs end-to-end (local frontend + Butterbase backend); only claim services actually used
 - [ ] **Deck submitted** to the Beta deck link
 - [ ] 2-min demo rehearsed twice + backup recording
-- [ ] Credits grabbed: Butterbase (`BUTTER0711`), Nebius, EverOS
+- [ ] Credits grabbed: Butterbase (`BUTTER0711`), EverOS
 
 ---
 
@@ -208,6 +208,7 @@ Real build window: ~1:00–5:00 + scraps before lunch.
 - Exact EverOS memory schema (profile + session record fields) → fix §4/§5
 - How Raven install + retrieval API is actually called → fix §5/§6
 - Butterbase MCP submission steps
+- Which models sit behind the Butterbase AI gateway, that hackathon credits cover gateway usage, and whether any model handles images (figure reading needs vision)
 - Whether Raven's "self-improving" memory does the curveball downgrade natively (could save an hour and strengthen the story)
 
 **Next:** at the workshop, grab the data-pack history format + Raven's retrieval call, paste them to me, and I'll rewrite §4–§6 to the real APIs so Sam's seed loads and Raven answers first try.

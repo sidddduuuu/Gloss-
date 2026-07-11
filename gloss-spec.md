@@ -62,7 +62,7 @@ Build a demo around:
 - **Memory:** EverOS (persistent learner concepts/profile)
 - **Run state/submission:** Butterbase
 - **Knowledge graph:** React + SVG/D3 force layout
-- **Model:** Claude API for grounded text + figure explanations
+- **Model:** Butterbase AI gateway for grounded text + figure explanations
 
 ## Data flow
 Document → selection → context capture → Raven retrieves EverOS memory → grounded + personalized explanation → graph update → understanding confirmation → EverOS write → next paper transfer → cross-paper edge.

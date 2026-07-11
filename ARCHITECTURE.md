@@ -14,9 +14,9 @@
 | Knowledge graph | **React + SVG/D3 force layout** | Live concept graph; mastered vs open states; animated cross-paper edges |
 | Agent orchestration | **Raven** | The `/explain` endpoint is a Raven agent: retrieve → ground → personalize → write |
 | Learner memory | **EverOS** | Persistent learner profile, confirmed/shaky concepts, style preferences, session history |
-| Model | **Claude API** | Grounded text explanations + figure/equation reading |
-| Run state & submission | **Butterbase** | Run-state storage; mandatory MCP submission for judging |
-| Hosting | **Nebius** | Frontend, backend, and model endpoint (builder credits) |
+| Model | **Butterbase AI gateway** | Single chat endpoint for grounded explanations (vision support for figure reading to be confirmed) |
+| Backend, run state & submission | **Butterbase** | Backend hosting, run-state storage; mandatory MCP submission for judging |
+| Hosting (frontend) | **Local for demo** | Reader runs locally; all server-side pieces live on Butterbase — no Nebius |
 | Client persistence | Browser local storage | Highlights and notes (current reader behavior) |
 
 ---
@@ -32,9 +32,9 @@ flowchart LR
         REVEAL["Memory Reveal panel<br/>raw EverOS record"]
     end
 
-    subgraph Backend["Raven agent (hosted on Nebius)"]
+    subgraph Backend["Raven agent (on Butterbase)"]
         EXPLAIN["/explain"]
-        CLAUDE["Claude API<br/>grounded explanation"]
+        GATEWAY["Butterbase AI gateway<br/>grounded explanation"]
     end
 
     EVEROS[("EverOS<br/>learner memory")]
@@ -42,7 +42,7 @@ flowchart LR
 
     PDF -- "selection + context" --> EXPLAIN
     EXPLAIN -- "retrieve confirmed concepts + style" --> EVEROS
-    EXPLAIN --> CLAUDE
+    EXPLAIN --> GATEWAY
     EXPLAIN -- "explanation · built_on · resume_note · graph_ops" --> WIN
     WIN -- "graph_ops" --> GRAPH
     WIN -- "Got it → confirm concept" --> EXPLAIN
@@ -104,7 +104,7 @@ On each `/explain` call, the agent:
 
 1. **Retrieves** the learner's relevant *confirmed* concepts + style preferences from EverOS
 2. **Separates** the current passage from retrieved knowledge
-3. **Explains** — grounded in the passage, built on prior concepts, in the learner's style (via Claude)
+3. **Explains** — grounded in the passage, built on prior concepts, in the learner's style (via the Butterbase AI gateway)
 4. **Resumes** — attaches a note from the last session
 5. **Returns** `built_on`, `graph_ops`, and a `new_concept` (status `pending`)
 6. **Writes back** — on **Got it**, the confirmed concept persists to EverOS
@@ -123,7 +123,7 @@ learner signals struggle, triggering a simpler re-explanation on the next pass.
 ```
 Document → selection → context capture
   → Raven retrieves EverOS memory
-  → grounded + personalized explanation (Claude)
+  → grounded + personalized explanation (Butterbase AI gateway)
   → graph update (graph_ops)
   → learner confirms understanding (Got it)
   → EverOS write

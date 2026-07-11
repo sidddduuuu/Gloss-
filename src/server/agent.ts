@@ -44,10 +44,18 @@ function buildUserPrompt(req: ExplainRequest): string {
   ].join("\n");
 }
 
+// The two scripted demo concepts always use the deterministic path so the
+// cross-paper money-shot is bulletproof regardless of model output. Everything
+// else (including uploaded papers) goes through the real model.
+function isScriptedConcept(selection: string): boolean {
+  const s = selection.toLowerCase();
+  return s.includes("reward signal") || s.includes("temporal-difference") || s.includes("temporal difference");
+}
+
 export async function explain(req: ExplainRequest): Promise<ExplainResponse> {
   const learner = readLearner();
   const mock = buildMockExplain(req, learner);
-  if (!gatewayConfigured()) return mock;
+  if (!gatewayConfigured() || isScriptedConcept(req.selection)) return mock;
 
   const raw = await callGateway([
     { role: "system", content: buildSystemPrompt(learner) },

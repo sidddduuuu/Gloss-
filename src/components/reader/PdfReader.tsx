@@ -38,6 +38,13 @@ export default function PdfReader({ paper, onSelect, onMeta }: Props) {
         // Served from /public — avoids bundler-specific worker resolution.
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         const { TextLayer } = pdfjs;
+        if (typeof TextLayer !== "function") {
+          console.error(
+            `[PdfReader] pdfjs.TextLayer is unavailable (installed pdfjs-dist ${
+              (pdfjs as { version?: string }).version ?? "unknown"
+            }). Run "npm install" to sync to the pinned version, then hard-refresh.`
+          );
+        }
 
         const doc = await pdfjs.getDocument(paper.file).promise;
         if (cancelled) return;
@@ -78,20 +85,29 @@ export default function PdfReader({ paper, onSelect, onMeta }: Props) {
             container.appendChild(pageEl);
 
             await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-
-            const textContent = await page.getTextContent();
-            texts.set(
-              n,
-              textContent.items.map((i) => ("str" in i ? i.str : "")).join(" ")
-            );
-            const textLayer = new TextLayer({ textContentSource: textContent, container: textDiv, viewport });
-            await textLayer.render();
             renderedAny = true;
-            // Show the reader as soon as the first page is up; keep rendering the rest.
             if (n === 1) setStatus("ready");
+
+            // Text layer is what makes selection work — render it independently so a
+            // failure here is loud and diagnosable (not silently swallowed as a page error).
+            try {
+              const textContent = await page.getTextContent();
+              texts.set(
+                n,
+                textContent.items.map((i) => ("str" in i ? i.str : "")).join(" ")
+              );
+              const textLayer = new TextLayer({ textContentSource: textContent, container: textDiv, viewport });
+              await textLayer.render();
+            } catch (textErr) {
+              console.error(
+                `[PdfReader] TEXT LAYER failed on page ${n} — pages render but you can't select text. ` +
+                  `This is almost always a pdfjs-dist version mismatch: run "npm install" then hard-refresh.`,
+                textErr
+              );
+            }
           } catch (pageErr) {
             // One bad page must not blank the whole document.
-            console.error(`[PdfReader] page ${n} failed`, pageErr);
+            console.error(`[PdfReader] page ${n} render failed`, pageErr);
           }
         }
         if (cancelled) return;

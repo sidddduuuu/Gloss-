@@ -69,3 +69,21 @@ Document → selection → context capture → Raven retrieves EverOS memory →
 
 ## Success signal
 A learner highlights a hard concept in paper 2 and receives an explanation explicitly built on a concept mastered in paper 1, while the graph visibly draws the cross-paper connection.
+
+## EverMind challenge fit-check
+Gloss is positioned for the EverMind challenge by proving that learning compounds across sessions.
+
+1. Pick one learner card (or Card 5 with seeded history).
+2. Show that prior sessions improve later explanations and support.
+3. Demo session 1 vs session 5 with a clear "remembered X → did Y" improvement.
+4. Introduce a live curveball and show adaptation from remembered learner state.
+5. Open memory during demo to reveal what was stored and recalled.
+
+## Raven + EverOS memory role
+- Raven is the memory orchestration layer used in every explanation flow.
+- EverOS stores persistent learner history, diagnoses, preferences, and confirmed concepts.
+- Raven retrieves relevant memory before each response and personalizes explanations with it.
+- After each interaction, Raven writes updated understanding signals back to EverOS so the next session improves.
+
+## Pitch line for showcase
+Our product uses EverOS + Raven to deliver cross-session personalized learning that gets better over time.

@@ -27,9 +27,11 @@ function buildSystemPrompt(learner: LearnerRecord): string {
       ? `CONFIRMED CONCEPTS (build on these when relevant, and say so):\n${confirmed}`
       : "No confirmed concepts yet — explain cold, in the learner's style.",
     "",
-    "Respond with ONLY a JSON object with keys: explanation (string), grounded (boolean),",
-    'built_on (array of {concept, from_paper}), resume_note (string or null),',
-    'new_concept ({concept, understanding, status:"pending"} or null).',
+    "Respond with ONLY a JSON object with keys: title (short concept heading),",
+    "explanation (2-4 short sentences in the learner's style), analogy (one concrete",
+    "everyday analogy), grounded (boolean), built_on (array of {concept, from_paper} —",
+    "only concepts from the confirmed list above that you actually built on),",
+    'resume_note (string or null), new_concept ({concept, understanding, status:"pending"} or null).',
   ].join("\n");
 }
 
@@ -56,17 +58,47 @@ export async function explain(req: ExplainRequest): Promise<ExplainResponse> {
   try {
     const parsed = JSON.parse(raw.replace(/^```(json)?|```$/g, "").trim()) as Partial<ExplainResponse>;
     if (typeof parsed.explanation !== "string") return mock;
-    // Model supplies the words; graph_ops and memory_excerpt stay deterministic
-    // (derived the same way as the mock) so the graph never depends on model output.
+
+    const builtOn = Array.isArray(parsed.built_on) ? parsed.built_on : mock.built_on;
+    const conceptId = mock.new_concept?.concept;
+
+    // Model supplies the words; the node for the new concept stays deterministic
+    // (from the mock) so ids align with Got-it. When the model connects the
+    // selection to a known concept, synthesize a cross-paper edge so real
+    // explanations grow the graph too. Edges to absent nodes are skipped client-side.
+    const graphOps = [...mock.graph_ops];
+    if (conceptId) {
+      for (const b of builtOn) {
+        const target = slugify(b.concept);
+        if (target && target !== conceptId) {
+          graphOps.push({ op: "update_node", id: target, state: "confirmed" });
+          graphOps.push({ op: "add_edge", from: conceptId, to: target, kind: "cross_paper" });
+        }
+      }
+    }
+
     return {
       ...mock,
       explanation: parsed.explanation,
       grounded: parsed.grounded ?? true,
-      built_on: Array.isArray(parsed.built_on) ? parsed.built_on : mock.built_on,
+      built_on: builtOn,
       resume_note: parsed.resume_note ?? mock.resume_note,
-      new_concept: parsed.new_concept ?? mock.new_concept,
+      title: parsed.title ?? mock.title,
+      analogy: parsed.analogy ?? mock.analogy,
+      new_concept: mock.new_concept
+        ? { ...mock.new_concept, understanding: parsed.new_concept?.understanding ?? mock.new_concept.understanding }
+        : mock.new_concept,
+      graph_ops: graphOps,
     };
   } catch {
     return mock;
   }
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
 }

@@ -68,7 +68,7 @@ try {
   assert(await page.locator(".cta:disabled").isVisible(), "concept confirmed + saved");
 
   console.log("Beat 3: switch to paper 2, select 'temporal'");
-  await page.locator('.paper-other:has-text("Deep RL Overview")').click();
+  await page.locator('.paper-item:has-text("Deep RL Overview")').click();
   await page.waitForTimeout(500);
   await page.waitForSelector(".pdf-text-layer span", { timeout: 30000 });
   const sel2 = await selectPhrase(page, "temporal");

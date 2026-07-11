@@ -13,12 +13,13 @@ export interface Selection {
 interface Props {
   paper: Paper;
   onSelect: (sel: Selection) => void;
+  onMeta?: (info: { numPages: number; rendered: number }) => void;
 }
 
 // Renders a PDF full-width with a selectable text layer. On mouseup with a
 // non-empty selection, surfaces the selected string plus surrounding page text
 // as context. Uses pdfjs-dist loaded lazily on the client.
-export default function PdfReader({ paper, onSelect }: Props) {
+export default function PdfReader({ paper, onSelect, onMeta }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [pageText, setPageText] = useState<Map<number, string>>(new Map());
@@ -42,6 +43,7 @@ export default function PdfReader({ paper, onSelect }: Props) {
         if (cancelled) return;
 
         const maxPages = Math.min(doc.numPages, 12);
+        onMeta?.({ numPages: doc.numPages, rendered: maxPages });
         const width = container.clientWidth || 820;
 
         for (let n = 1; n <= maxPages; n++) {

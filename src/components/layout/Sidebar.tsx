@@ -1,29 +1,44 @@
 "use client";
 
-import { PAPERS, type Paper } from "@/lib/papers";
+import { useRef } from "react";
+import type { Paper } from "@/lib/papers";
 
 const NAV = [
   { icon: "▤", label: "Library", active: true },
-  { icon: "◈", label: "Knowledge Graph" },
+  { icon: "◈", label: "Graph" },
   { icon: "✎", label: "Notes" },
   { icon: "◉", label: "Memory" },
   { icon: "⚙", label: "Settings" },
 ];
 
 interface Props {
-  current: Paper;
+  papers: Paper[];
+  currentId: string;
   onSelectPaper: (idx: number) => void;
+  onUpload: (file: File) => void;
   everosOnline: boolean;
+  progressByPaper: Record<string, number>;
 }
 
-export default function Sidebar({ current, onSelectPaper, everosOnline }: Props) {
+export default function Sidebar({
+  papers,
+  currentId,
+  onSelectPaper,
+  onUpload,
+  everosOnline,
+  progressByPaper,
+}: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const currentIdx = papers.findIndex((p) => p.id === currentId);
+  const current = papers[currentIdx];
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <span className="logo-mark">G</span>
+        <span className="logo-mark">✦</span>
         <div>
           <div className="logo-name">Gloss</div>
-          <div className="logo-tag">understanding that compounds</div>
+          <div className="logo-tag">Read. Understand. Remember.</div>
         </div>
       </div>
 
@@ -38,38 +53,76 @@ export default function Sidebar({ current, onSelectPaper, everosOnline }: Props)
         ))}
       </nav>
 
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onUpload(f);
+          e.target.value = "";
+        }}
+      />
+      <button className="upload-btn" onClick={() => fileRef.current?.click()}>
+        ＋ Upload PDF
+      </button>
+
       <div className="sidebar-divider" />
 
-      <div className="sidebar-section">
-        <div className="section-label">Current paper</div>
-        <div className="paper-current">{current.title}</div>
-      </div>
+      {current && (
+        <div className="sidebar-section">
+          <div className="section-label">Current paper</div>
+          <div className="paper-item current">
+            <div className="paper-item-title">{current.title}</div>
+            {current.authors && <div className="paper-item-sub">{current.authors}</div>}
+            <div className="paper-progress">
+              <div
+                className="paper-progress-fill"
+                style={{ width: `${Math.round((progressByPaper[current.id] ?? 0) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-      <div className="sidebar-section">
-        <div className="section-label">Other papers</div>
-        {PAPERS.map((p, i) =>
-          p.id === current.id ? null : (
-            <button key={p.id} className="paper-other" onClick={() => onSelectPaper(i)}>
-              {p.shortTitle}
-            </button>
-          )
-        )}
-      </div>
+      {papers.length > 1 && (
+        <div className="sidebar-section">
+          <div className="section-label">Other papers</div>
+          {papers.map((p, i) =>
+            p.id === currentId ? null : (
+              <button key={p.id} className="paper-item" onClick={() => onSelectPaper(i)}>
+                <div className="paper-item-title">{p.shortTitle}</div>
+                {p.authors && <div className="paper-item-sub">{p.authors}</div>}
+                <div className="paper-progress">
+                  <div
+                    className="paper-progress-fill"
+                    style={{ width: `${Math.round((progressByPaper[p.id] ?? 0) * 100)}%` }}
+                  />
+                </div>
+              </button>
+            )
+          )}
+        </div>
+      )}
 
       <div className="sidebar-spacer" />
 
-      <div className="learner-card">
-        <div className="learner-avatar">S</div>
-        <div>
-          <div className="learner-name">Sam</div>
-          <div className="learner-role">1st-yr Neuroscience PhD</div>
+      <div className="profile-card">
+        <div className="profile-head">
+          <span className="profile-icon">◐</span> Your Learning Profile
         </div>
+        <dl className="profile-list">
+          <div><dt>Field</dt><dd>Neuroscience</dd></div>
+          <div><dt>Goal</dt><dd>Understand ML/RL</dd></div>
+          <div><dt>Style</dt><dd>Short, analogy-first</dd></div>
+        </dl>
       </div>
 
       <div className="everos-status">
         <span className={`status-dot ${everosOnline ? "online" : ""}`} />
-        EverOS {everosOnline ? "connected" : "offline"}
-        <span className="sync-note">· synced</span>
+        EverOS Memory
+        <span className="sync-note">{everosOnline ? "· Synced" : "· offline"}</span>
       </div>
     </aside>
   );

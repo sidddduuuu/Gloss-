@@ -2,7 +2,7 @@
 
 import "./app.css";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { PAPERS } from "@/lib/papers";
+import { DEFAULT_PAPERS, type Paper } from "@/lib/papers";
 import type { ExplainResponse } from "@/lib/contract";
 import { useGraph } from "@/hooks/useGraph";
 import PdfReader, { type Selection } from "@/components/reader/PdfReader";
@@ -10,36 +10,75 @@ import ExplanationPanel from "@/components/panels/ExplanationPanel";
 import KnowledgeGraph from "@/components/panels/KnowledgeGraph";
 import MemoryReveal from "@/components/panels/MemoryReveal";
 import Sidebar from "@/components/layout/Sidebar";
-import BottomDashboard from "@/components/layout/BottomDashboard";
+import BottomDashboard, { type Highlight } from "@/components/layout/BottomDashboard";
 
 const LEARNER_ID = "sam";
 
 export default function Home() {
-  const [paperIdx, setPaperIdx] = useState(0);
-  const [visited, setVisited] = useState<Set<string>>(new Set([PAPERS[0].id]));
+  const [papers, setPapers] = useState<Paper[]>(DEFAULT_PAPERS);
+  const [currentId, setCurrentId] = useState(DEFAULT_PAPERS[0].id);
+  const [visited, setVisited] = useState<Set<string>>(new Set([DEFAULT_PAPERS[0].id]));
+  const [pageInfo, setPageInfo] = useState<{ numPages: number; rendered: number } | null>(null);
   const [chip, setChip] = useState<Selection | null>(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ExplainResponse | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [revealOpen, setRevealOpen] = useState(false);
   const [memoryKey, setMemoryKey] = useState(0);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const lastExcerpt = useRef<Record<string, unknown> | null>(null);
   const graphRef = useRef<HTMLDivElement>(null);
 
   const { graph, apply, setNodeState } = useGraph();
-  const paper = PAPERS[paperIdx];
+  const paper = papers.find((p) => p.id === currentId) ?? papers[0];
 
   const metrics = useMemo(() => {
     const conceptsLearned = graph.nodes.filter((n) => n.state === "confirmed").length;
     const connectionsMade = graph.edges.length;
-    const progress =
-      graph.nodes.length === 0 ? 0 : conceptsLearned / graph.nodes.length;
+    const progress = graph.nodes.length === 0 ? 0 : conceptsLearned / graph.nodes.length;
     return { conceptsLearned, connectionsMade, papersRead: visited.size, progress };
   }, [graph, visited]);
 
+  const progressByPaper = useMemo(() => {
+    const acc: Record<string, { total: number; done: number }> = {};
+    for (const n of graph.nodes) {
+      const a = (acc[n.paper] ??= { total: 0, done: 0 });
+      a.total += 1;
+      if (n.state === "confirmed") a.done += 1;
+    }
+    const out: Record<string, number> = {};
+    for (const [id, { total, done }] of Object.entries(acc)) out[id] = total ? done / total : 0;
+    return out;
+  }, [graph]);
+
+  const handleMeta = useCallback((info: { numPages: number; rendered: number }) => {
+    setPageInfo(info);
+  }, []);
+
   function switchPaper(idx: number) {
-    setPaperIdx(idx);
-    setVisited((v) => new Set(v).add(PAPERS[idx].id));
+    setCurrentId(papers[idx].id);
+    setVisited((v) => new Set(v).add(papers[idx].id));
+    setData(null);
+    setChip(null);
+  }
+
+  function handleUpload(file: File) {
+    const url = URL.createObjectURL(file);
+    const name = file.name.replace(/\.pdf$/i, "");
+    const id = `upload_${Date.now()}`;
+    const uploaded: Paper = {
+      id,
+      title: name,
+      shortTitle: name.length > 28 ? name.slice(0, 28) + "…" : name,
+      authors: "Uploaded",
+      file: url,
+      uploaded: true,
+    };
+    setPapers((prev) => [...prev, uploaded]);
+    setCurrentId(id);
+    setVisited((v) => new Set(v).add(id));
+    setData(null);
+    setChip(null);
   }
 
   const runExplain = useCallback(
@@ -48,6 +87,7 @@ export default function Home() {
       setConfirmed(false);
       setData(null);
       setChip(null);
+      setHighlights((h) => [{ text: sel.text, paper: paper.shortTitle }, ...h].slice(0, 8));
       try {
         const res = await fetch("/api/explain", {
           method: "POST",
@@ -77,7 +117,7 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [paper.id, apply]
+    [paper.id, paper.shortTitle, apply]
   );
 
   async function handleGotIt() {
@@ -119,12 +159,29 @@ export default function Home() {
   return (
     <div className="shell">
       <div className="shell-main">
-        <Sidebar current={paper} onSelectPaper={switchPaper} everosOnline />
+        <Sidebar
+          papers={papers}
+          currentId={currentId}
+          onSelectPaper={switchPaper}
+          onUpload={handleUpload}
+          everosOnline
+          progressByPaper={progressByPaper}
+        />
 
         <main className="reader-col">
           <div className="reader-toolbar">
-            <span className="tool-paper">{paper.title}</span>
+            <span className="tool-paper">
+              {paper.title}
+              {paper.authors ? ` · ${paper.authors}` : ""}
+            </span>
             <div className="tool-actions">
+              {pageInfo && (
+                <span className="tool-pages">
+                  {pageInfo.rendered < pageInfo.numPages
+                    ? `1–${pageInfo.rendered} of ${pageInfo.numPages}`
+                    : `${pageInfo.numPages} pages`}
+                </span>
+              )}
               <button className="tool-btn" onClick={handleCurveball} title="Simulate an off day">
                 Curveball
               </button>
@@ -135,9 +192,12 @@ export default function Home() {
           </div>
 
           <div className="reader-surface">
-            <PdfReader paper={paper} onSelect={setChip} />
+            <PdfReader paper={paper} onSelect={setChip} onMeta={handleMeta} />
             {chip && (
-              <div className="explain-pill" style={{ left: chip.x, top: chip.y - 52 }}>
+              <div
+                className="explain-pill"
+                style={{ left: chip.x, top: chip.y < 110 ? chip.y + 28 : chip.y - 52 }}
+              >
                 <button className="pill-primary" onClick={() => runExplain(chip)}>
                   Explain
                 </button>
@@ -166,7 +226,7 @@ export default function Home() {
         </div>
       </div>
 
-      <BottomDashboard {...metrics} />
+      <BottomDashboard {...metrics} highlights={highlights} />
 
       <MemoryReveal
         open={revealOpen}

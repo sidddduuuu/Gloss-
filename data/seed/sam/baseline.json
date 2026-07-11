@@ -1,0 +1,56 @@
+{
+  "learner_id": "sam",
+  "style": {
+    "length": "short",
+    "approach": "analogy-first, concrete before formal",
+    "struggles": [
+      "equations",
+      "figure-heavy notation",
+      "RL/ML math"
+    ]
+  },
+  "concepts": {
+    "prediction_error": {
+      "status": "attempted",
+      "understanding": "First real ML-adjacent paper. Sam got the biology framing (neurons predicting inputs)",
+      "from_paper": "Predictive Coding in Cortical Circuits",
+      "last_seen": "2026-06-08"
+    },
+    "reward_signal": {
+      "status": "confirmed",
+      "understanding": "Breakthrough session. The dog-treat analogy landed: the **reward signal** is predictable",
+      "from_paper": "RL in the Brain",
+      "last_seen": "2026-06-15"
+    },
+    "value_function": {
+      "status": "attempted",
+      "understanding": "Sam read the intro RL chapter. Got \"value = how good a state is in the long run\" as an",
+      "from_paper": "Reinforcement Learning: An Introduction (excerpts)",
+      "last_seen": "2026-06-22"
+    },
+    "td_learning": {
+      "status": "shaky",
+      "understanding": "Sam hit TD learning for the first time. Understood it's about updating guesses as you go,",
+      "from_paper": "Reinforcement Learning: An Introduction (excerpts)",
+      "last_seen": "2026-06-29"
+    }
+  },
+  "sessions": [
+    {
+      "date": "2026-06-08",
+      "summary": "working through Predictive Coding in Cortical Circuits (prediction error)"
+    },
+    {
+      "date": "2026-06-15",
+      "summary": "working through RL in the Brain (reward signal)"
+    },
+    {
+      "date": "2026-06-22",
+      "summary": "working through Reinforcement Learning: An Introduction (excerpts) (value function)"
+    },
+    {
+      "date": "2026-06-29",
+      "summary": "working through Reinforcement Learning: An Introduction (excerpts) (td learning)"
+    }
+  ]
+}

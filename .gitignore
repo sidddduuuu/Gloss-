@@ -9,3 +9,6 @@ next-env.d.ts
 
 # live learner memory (mutates at runtime; baseline lives in data/seed/)
 data/memory/
+
+# agent scratch / demo artifacts
+.context/

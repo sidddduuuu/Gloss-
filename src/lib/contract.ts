@@ -34,6 +34,8 @@ export interface ExplainResponse {
   resume_note: string | null;
   new_concept: NewConcept | null;
   graph_ops: GraphOp[];
-  // Optional extension: the raw memory records the agent recalled, for the Memory Reveal panel.
-  memory_excerpt?: Record<string, unknown> | null;
+  // Optional extensions (frontend renders when present; required shape stays locked).
+  title?: string; // concept heading for the explanation card
+  analogy?: string; // short analogy for the Analogy card
+  memory_excerpt?: Record<string, unknown> | null; // raw recalled record for Memory Reveal
 }

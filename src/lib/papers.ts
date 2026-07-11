@@ -13,9 +13,9 @@ export const PAPERS: Paper[] = [
     file: "/papers/paper1.pdf",
   },
   {
-    id: "temporal_differences",
-    title: "Learning to Predict by the Methods of Temporal Differences (Sutton, 1988)",
-    shortTitle: "Temporal Differences",
+    id: "deep_rl_overview",
+    title: "Deep Reinforcement Learning: An Overview (Li, 2018)",
+    shortTitle: "Deep RL Overview",
     file: "/papers/paper2.pdf",
   },
 ];

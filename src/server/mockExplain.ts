@@ -26,8 +26,11 @@ export function buildMockExplain(
 
   if (sel.includes("reward signal") || sel.includes("reward")) {
     return {
+      title: "Reward Signal",
+      analogy:
+        "Think of a training treat for a dog — predictable feedback that arrives right after a good move and says \"do that again.\"",
       explanation:
-        "In this passage, the reward signal is the feedback the system uses to know it did well — like a training treat for a dog, but here it's a burst of predictable input given to the neurons after a good move. The passage frames it as the loop's teaching signal: behave usefully, receive predictable stimulation.",
+        "In this passage, the reward signal is the feedback the system uses to know it did well — a burst of predictable input given to the neurons after a good move. The passage frames it as the loop's teaching signal: behave usefully, receive predictable stimulation.",
       grounded: true,
       built_on: [],
       resume_note: lastSession(learner),
@@ -59,6 +62,9 @@ export function buildMockExplain(
     if (rewardSignal && rewardSignal.status === "confirmed") {
       const source = rewardSignal.from_paper;
       return {
+        title: "Temporal-Difference Error",
+        analogy:
+          "Like checking your GPS ETA mid-drive: the gap between the arrival time you expected and the new estimate — and you use that gap to correct course.",
         explanation:
           `You already understood the reward signal from ${source} — the feedback that says "that worked." The temporal-difference error is just the gap between the reward the agent expected and the reward it actually got. Expected a big treat, got a small one? Negative TD error — adjust. It's the same signal you know, turned into a running prediction check.`,
         grounded: true,
@@ -100,6 +106,9 @@ export function buildMockExplain(
 
     // Curveball path: reward_signal shaky (or absent) → simpler, standalone re-explanation.
     return {
+      title: "Temporal-Difference Error",
+      analogy:
+        "Guessed the movie was 5/10, it turned out 3/10 — you were off by 2, so you nudge your expectation down. That nudge is the error.",
       explanation:
         "Let's take this one slowly, from the passage itself. An agent guesses how good things will be, then sees what actually happens. The temporal-difference error is just: actual minus expected. Guessed 5, got 3 → error of −2 → lower the guess next time. That running correction is the whole idea.",
       grounded: true,

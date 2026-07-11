@@ -1,7 +1,7 @@
 "use client";
 
 import "./app.css";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { PAPERS } from "@/lib/papers";
 import type { ExplainResponse } from "@/lib/contract";
 import { useGraph } from "@/hooks/useGraph";
@@ -9,26 +9,41 @@ import PdfReader, { type Selection } from "@/components/reader/PdfReader";
 import ExplanationPanel from "@/components/panels/ExplanationPanel";
 import KnowledgeGraph from "@/components/panels/KnowledgeGraph";
 import MemoryReveal from "@/components/panels/MemoryReveal";
+import Sidebar from "@/components/layout/Sidebar";
+import BottomDashboard from "@/components/layout/BottomDashboard";
 
 const LEARNER_ID = "sam";
 
 export default function Home() {
   const [paperIdx, setPaperIdx] = useState(0);
+  const [visited, setVisited] = useState<Set<string>>(new Set([PAPERS[0].id]));
   const [chip, setChip] = useState<Selection | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ExplainResponse | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [revealOpen, setRevealOpen] = useState(false);
   const [memoryKey, setMemoryKey] = useState(0);
   const lastExcerpt = useRef<Record<string, unknown> | null>(null);
+  const graphRef = useRef<HTMLDivElement>(null);
 
   const { graph, apply, setNodeState } = useGraph();
   const paper = PAPERS[paperIdx];
 
+  const metrics = useMemo(() => {
+    const conceptsLearned = graph.nodes.filter((n) => n.state === "confirmed").length;
+    const connectionsMade = graph.edges.length;
+    const progress =
+      graph.nodes.length === 0 ? 0 : conceptsLearned / graph.nodes.length;
+    return { conceptsLearned, connectionsMade, papersRead: visited.size, progress };
+  }, [graph, visited]);
+
+  function switchPaper(idx: number) {
+    setPaperIdx(idx);
+    setVisited((v) => new Set(v).add(PAPERS[idx].id));
+  }
+
   const runExplain = useCallback(
     async (sel: Selection) => {
-      setPanelOpen(true);
       setLoading(true);
       setConfirmed(false);
       setData(null);
@@ -95,62 +110,63 @@ export default function Home() {
     setMemoryKey((k) => k + 1);
   }
 
+  function viewInGraph() {
+    graphRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    graphRef.current?.classList.add("flash");
+    window.setTimeout(() => graphRef.current?.classList.remove("flash"), 900);
+  }
+
   return (
-    <main className="app">
-      <header className="topbar">
-        <div className="brand">
-          Gloss <span className="brand-sub">reads with your memory</span>
-        </div>
-        <div className="paper-switch" role="tablist" aria-label="Papers">
-          {PAPERS.map((p, i) => (
-            <button
-              key={p.id}
-              role="tab"
-              aria-selected={i === paperIdx}
-              className={i === paperIdx ? "active" : ""}
-              onClick={() => setPaperIdx(i)}
-            >
-              {p.shortTitle}
-            </button>
-          ))}
-        </div>
-        <div className="topbar-actions">
-          <button className="ghost" onClick={handleCurveball} title="Downgrade a confirmed concept">
-            Curveball
-          </button>
-          <button className="ghost" onClick={() => setRevealOpen(true)}>
-            Memory Reveal
-          </button>
-        </div>
-      </header>
+    <div className="shell">
+      <div className="shell-main">
+        <Sidebar current={paper} onSelectPaper={switchPaper} everosOnline />
 
-      <div className="workspace">
-        <section className="reader-col">
-          <PdfReader paper={paper} onSelect={setChip} />
-          {chip && (
-            <button
-              className="explain-chip"
-              style={{ left: chip.x, top: chip.y - 46 }}
-              onClick={() => runExplain(chip)}
-            >
-              Explain “{chip.text.slice(0, 28)}{chip.text.length > 28 ? "…" : ""}”
-            </button>
-          )}
-        </section>
+        <main className="reader-col">
+          <div className="reader-toolbar">
+            <span className="tool-paper">{paper.title}</span>
+            <div className="tool-actions">
+              <button className="tool-btn" onClick={handleCurveball} title="Simulate an off day">
+                Curveball
+              </button>
+              <button className="tool-btn" onClick={() => setRevealOpen(true)}>
+                Memory Reveal
+              </button>
+            </div>
+          </div>
 
-        <section className="side-col">
-          {panelOpen && (
-            <ExplanationPanel
-              loading={loading}
-              data={data}
-              confirmed={confirmed}
-              onGotIt={handleGotIt}
-              onClose={() => setPanelOpen(false)}
-            />
-          )}
-          <KnowledgeGraph graph={graph} />
-        </section>
+          <div className="reader-surface">
+            <PdfReader paper={paper} onSelect={setChip} />
+            {chip && (
+              <div className="explain-pill" style={{ left: chip.x, top: chip.y - 52 }}>
+                <button className="pill-primary" onClick={() => runExplain(chip)}>
+                  Explain
+                </button>
+                <button className="pill-ghost" onClick={() => runExplain(chip)}>
+                  Ask
+                </button>
+                <button className="pill-ghost" onClick={() => runExplain(chip)}>
+                  Remember
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+
+        <div className="right-col">
+          <ExplanationPanel
+            loading={loading}
+            data={data}
+            confirmed={confirmed}
+            onGotIt={handleGotIt}
+            onViewInGraph={viewInGraph}
+          />
+          <div ref={graphRef} className="graph-wrap">
+            <KnowledgeGraph graph={graph} />
+          </div>
+        </div>
       </div>
+
+      <BottomDashboard {...metrics} />
 
       <MemoryReveal
         open={revealOpen}
@@ -158,6 +174,6 @@ export default function Home() {
         lastExcerpt={lastExcerpt.current}
         onClose={() => setRevealOpen(false)}
       />
-    </main>
+    </div>
   );
 }

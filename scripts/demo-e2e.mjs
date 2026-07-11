@@ -14,19 +14,23 @@ function assert(cond, msg) {
 
 // Select text inside the rendered PDF text layer by matching a substring.
 async function selectPhrase(page, phrase) {
-  const handle = await page.evaluateHandle((needle) => {
+  const el = await page.evaluateHandle((needle) => {
     const spans = Array.from(document.querySelectorAll(".pdf-text-layer span"));
-    const el = spans.find((s) => s.textContent && s.textContent.toLowerCase().includes(needle.toLowerCase()));
-    if (!el) return null;
+    const found = spans.find((s) => s.textContent && s.textContent.toLowerCase().includes(needle.toLowerCase()));
+    if (found) found.scrollIntoView({ block: "center" });
+    return found ?? null;
+  }, phrase);
+  if (!(await el.evaluate((n) => n !== null))) return null;
+  await page.waitForTimeout(200);
+  await page.evaluate((node) => {
     const range = document.createRange();
-    range.selectNodeContents(el);
+    range.selectNodeContents(node);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
-    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-    return el;
-  }, phrase);
-  return handle;
+    node.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  }, el);
+  return el;
 }
 
 const browser = await chromium.launch();
@@ -42,36 +46,37 @@ try {
   console.log("Beat 0: load");
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.waitForSelector(".pdf-text-layer span", { timeout: 30000 });
-  assert(await page.locator(".brand").isVisible(), "app shell + reader rendered");
+  assert(await page.locator(".logo-name").isVisible(), "app shell + reader rendered");
   await page.screenshot({ path: `${OUT}/0-loaded.png` });
 
   console.log("Beat 1: paper 1 — select 'reward'");
   const sel1 = await selectPhrase(page, "reward");
   assert(sel1 !== null, "found 'reward' in paper 1 text layer");
-  await page.waitForSelector(".explain-chip", { timeout: 5000 });
+  await page.waitForSelector(".explain-pill", { timeout: 5000 });
   await page.screenshot({ path: `${OUT}/1-chip.png` });
-  await page.locator(".explain-chip").click();
+  await page.locator(".pill-primary").click();
   await page.waitForSelector(".explanation-text", { timeout: 10000 });
-  assert(await page.locator(".gotit").isVisible(), "explanation panel + Got it shown");
-  await page.waitForSelector(".graph .node", { timeout: 5000 });
-  assert((await page.locator(".graph .node").count()) >= 1, "graph node appeared");
+  assert(await page.locator(".cta").isVisible(), "explanation panel + CTA shown");
+  assert(await page.locator(".analogy-card").isVisible(), "analogy card shown");
+  await page.waitForSelector(".node", { timeout: 5000 });
+  assert((await page.locator(".node").count()) >= 1, "graph node appeared");
   await page.screenshot({ path: `${OUT}/2-explained.png` });
 
-  console.log("Beat 2: Got it");
-  await page.locator(".gotit").click();
-  await page.waitForSelector(".gotit:disabled", { timeout: 5000 });
-  assert(await page.locator(".gotit:disabled").isVisible(), "Got it confirmed + saved");
+  console.log("Beat 2: Add to Understanding");
+  await page.locator(".cta").click();
+  await page.waitForSelector(".cta:disabled", { timeout: 5000 });
+  assert(await page.locator(".cta:disabled").isVisible(), "concept confirmed + saved");
 
-  console.log("Beat 3: switch to paper 2, select 'temporal-difference'");
-  await page.locator('.paper-switch button:has-text("Temporal Differences")').click();
+  console.log("Beat 3: switch to paper 2, select 'temporal'");
+  await page.locator('.paper-other:has-text("Deep RL Overview")').click();
   await page.waitForTimeout(500);
   await page.waitForSelector(".pdf-text-layer span", { timeout: 30000 });
-  const sel2 = await selectPhrase(page, "temporal-difference");
-  assert(sel2 !== null, "found 'temporal-difference' in paper 2 text layer");
-  await page.waitForSelector(".explain-chip", { timeout: 5000 });
-  await page.locator(".explain-chip").click();
-  await page.waitForSelector(".built-on", { timeout: 10000 });
-  const builtOn = await page.locator(".built-on").textContent();
+  const sel2 = await selectPhrase(page, "temporal");
+  assert(sel2 !== null, "found 'temporal' in paper 2 text layer");
+  await page.waitForSelector(".explain-pill", { timeout: 5000 });
+  await page.locator(".pill-primary").click();
+  await page.waitForSelector(".built-on-card", { timeout: 10000 });
+  const builtOn = await page.locator(".built-on-card").textContent();
   assert(/RL in the Brain/.test(builtOn), `"Building on…" names paper 1 (got: ${builtOn.trim()})`);
   assert(await page.locator(".resume-note").isVisible(), "resume note shown");
   // SVG <line> is reported "hidden" by Playwright visibility heuristics, so assert on
@@ -83,14 +88,15 @@ try {
   await page.screenshot({ path: `${OUT}/3-cross-paper.png` });
 
   console.log("Beat 4: curveball");
-  await page.locator('.ghost:has-text("Curveball")').click();
+  await page.locator('.tool-btn:has-text("Curveball")').click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${OUT}/4-curveball.png` });
 
   console.log("Beat 5: Memory Reveal");
-  await page.locator('.ghost:has-text("Memory Reveal")').click();
+  await page.locator('.tool-btn:has-text("Memory Reveal")').click();
   await page.waitForSelector(".reveal", { timeout: 5000 });
   assert(await page.locator(".reveal-json").first().isVisible(), "Memory Reveal shows raw record");
+  await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/5-memory-reveal.png` });
 
   if (errors.length) {
